@@ -1,15 +1,10 @@
-const BASE_URL = "https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies";
+const BASE_URL = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies";
 
 const dropdowns = document.querySelectorAll(".dropdown select");
 const btn = document.querySelector("form button");
 const fromCurr = document.querySelector(".from select");
 const toCurr = document.querySelector(".to select");
 const msg = document.querySelector(".msg");
-
-document.addEventListener("load", () => {
-
-})
-
 
 for (let select of dropdowns) {
   for (currCode in countryList) {
@@ -31,18 +26,40 @@ for (let select of dropdowns) {
 
 const updateExchangeRate = async () => {
   let amount = document.querySelector(".amount input");
-  let amtVal = amount.value;
-  if (amtVal === "" || amtVal < 1) {
+  let amtVal = parseFloat(amount.value);
+  
+  if (isNaN(amtVal) || amtVal < 1) {
     amtVal = 1;
     amount.value = "1";
   }
-  const URL = `${BASE_URL}/${fromCurr.value.toLowerCase()}/${toCurr.value.toLowerCase()}.json`;
-  let response = await fetch(URL);
-  let data = await response.json();
-  let rate = data[toCurr.value.toLowerCase()];
-
-  let finalAmount = amtVal * rate;
-  msg.innerText = `${amtVal} ${fromCurr.value} = ${finalAmount} ${toCurr.value}`;
+  
+  try {
+    const fromCurrency = fromCurr.value.toLowerCase();
+    const toCurrency = toCurr.value.toLowerCase();
+    
+    // Show loading message
+    msg.innerText = "Updating rates...";
+    
+    const response = await fetch(`${BASE_URL}/${fromCurrency}.json`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch exchange rates');
+    }
+    
+    const data = await response.json();
+    
+    if (!data[fromCurrency] || !data[fromCurrency][toCurrency]) {
+      throw new Error('Exchange rate not found for selected currencies');
+    }
+    
+    const rate = data[fromCurrency][toCurrency];
+    const finalAmount = (amtVal * rate).toFixed(2);
+    
+    msg.innerText = `${amtVal} ${fromCurr.value} = ${finalAmount} ${toCurr.value}`;
+  } catch (error) {
+    console.error('Error:', error);
+    msg.innerText = 'Failed to fetch exchange rates. Please try again.';
+  }
 };
 
 const updateFlag = (element) => {
